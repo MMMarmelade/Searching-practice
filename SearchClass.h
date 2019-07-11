@@ -232,4 +232,234 @@ public:
 			InOrder(F->rchild);
 		}
 	}
+/********************
+avltree方法比较多，且不仅仅是插入删除函数，所以用一个新类包装
+*********************/
+class AVLTree {
+public:
+	/**************************
+	往avl树T中插入记录R
+	***************************/
+	void setBf_H(avlTree& T) {
+		int lh, rh;
+		if (T->lchild)
+			lh = T->lchild->h;
+		else
+			lh = 0;
+		if (T->rchild)
+			rh = T->rchild->h;
+		else
+			rh = 0;
+		T->h = std::max(lh, rh) + 1;
+		T->bf = lh - rh;
+	}
+
+	void avlInsert(avlTree& T, records R) {
+		if (!T) 
+			T = new avlnode(R);
+		else if (R.keyc < T->data.keyc) {
+			avlInsert(T->lchild, R);
+			/*插入后返回时，实时更新h和bf*/
+			/*获取左右子树高度，处理nullptr的情况*/
+			setBf_H(T);
+			if (T->bf > 1) {/*在左子树插入，只需检验左子树是否过高*/
+				leftRotation(T);
+			}
+		}
+		else if (R.keyc > T->data.keyc) {
+			avlInsert(T->rchild, R);
+			setBf_H(T);
+			if (T->bf <-1) {/*在右子树插入，只需检验右子树是否过高*/
+				rightRotation(T);
+			}
+		}
+	}
+
+	void leftRotation(avlTree& Root) {
+		avlTree newRoot,bRoot;
+		/*LL型*/
+		if (Root->lchild->bf == 1) {
+			newRoot = Root->lchild;
+			/*旋转*/
+			Root->lchild = newRoot->rchild;
+			newRoot->rchild = Root;
+			/*更新属性,考虑到平衡二叉树的性质，新根的高度不变*/
+			Root->h = Root->h - 2;
+			Root->bf = 0;
+			newRoot->bf = 0;
+			/*更新指针*/
+			Root = newRoot;
+		}
+		else {/*LR型*/
+			bRoot = Root->lchild;
+			newRoot = bRoot->rchild;
+			/*旋转*/
+			bRoot->rchild = newRoot->lchild;
+			Root->lchild = newRoot->rchild;
+			newRoot->lchild = bRoot;
+			newRoot->rchild = Root;
+			/*更新属性，分三种情况newRoot的bf分别为1，0，-1*/
+			switch (newRoot->bf) {
+			case 1:
+				Root->bf = -1;
+				bRoot->bf = 0;
+			case 0:
+				Root->bf = bRoot->bf = 0;
+			case -1:
+				Root->bf = 0;
+				bRoot->bf = 1;
+			}
+			Root->h -= 2;
+			bRoot->h -= 1;
+			newRoot->h += 1;
+			newRoot->bf = 0;
+			/*更新指针*/
+			Root = newRoot;
+		}
+	}
+	
+	void rightRotation(avlTree& Root) {
+		avlTree newRoot, bRoot;
+		/*RR*/
+		if (Root->rchild->bf == -1) {
+			newRoot = Root->rchild;
+			/*rotation*/
+			Root->rchild = newRoot->lchild;
+			newRoot->lchild = Root;
+			/*update configurations:h and bf*/
+			Root->h -= 2;
+			Root->bf = 0;
+			newRoot->bf = 0;
+			/*update pointer*/
+			Root = newRoot;
+		}
+		/*RL*/
+		else {
+			bRoot = Root->rchild;
+			newRoot = bRoot->lchild;
+			/*rotation*/
+			Root->rchild = newRoot->lchild;
+			bRoot->lchild = newRoot->rchild;
+			newRoot->lchild = Root;
+			newRoot->rchild = bRoot;
+			/*update h & bf, given the bf of newRoot:1,0,-1*/
+			switch (newRoot->bf) {
+			case 1:
+				Root->bf = 0;
+				bRoot->bf = -1;
+			case 0:
+				Root->bf = bRoot->bf = 0;
+			case -1:
+				Root->bf = 1;
+				bRoot->bf = 0;
+			}
+			newRoot->bf = 0;
+			Root->h -= 2;
+			bRoot->h -= 1;
+			newRoot->h += 1;
+			/*update pointer*/
+			Root = newRoot;
+		}
+	}
+
+	/**********************
+	delete a record in a avlTree T
+	***********************/
+	void avlDelete(avlTree& T, records R) {
+		if (T) {
+			avlTree P;
+			if (R.keyc == T->data.keyc) {
+				if (!T->rchild) {
+					P = T;
+					T = T->lchild;
+					delete P;
+				}
+				else if (!T->lchild) {
+					P = T;
+					T = T->rchild;
+					delete P;
+				}
+				else
+					T->data = avlDeleteMin(T);/*put the minium record of the right child-tree into the node*/
+			}
+			else if (R.keyc < T->data.keyc) {
+				avlDelete(T->lchild, R);
+				if (T) {
+					setBf_H(T);/*update the bf&h*/
+					/*re-balance*/
+					/*come back form the left, means that left might become shorter*/
+					if (T->bf < -1) {
+						rightRotation(T);
+						//cout <<"1"<< T->bf << "right_rotation" << endl;
+					}
+					//cout << "2" << T->bf << endl;
+				}
+
+			}
+			else if (R.keyc > T->data.keyc) {
+				avlDelete(T->rchild, R);
+				if (T) {
+					setBf_H(T);/*update the bf&h*/
+					/*come back form the right, means that right might become shorter*/
+					if (T->bf > 1) {
+						leftRotation(T);
+						//cout << "3" << T->bf << "left_rotation" << endl;
+					}
+					//cout << "4" << T->bf << endl;
+				}
+			}
+		}
+	}
+
+	records avlDeleteMin(avlTree& T) {
+		records trandata;
+		avlTree P;
+		if (!T->lchild) {
+			trandata = T->data;/*get the record data*/
+			T = T->rchild;/*rchild attaches to the parentnode*/
+			P = T;
+			delete P;
+			return trandata;
+		}
+		else
+			return avlDeleteMin(T->lchild);
+	}
+
+	/**********************
+	search function is similar to the search-function of BST
+	***********************/
+	avlTree avlSearch(avlTree T, records R) {
+
+	}
+
+	/************************
+	traversal functions
+	*************************/
+	void avlTraversalPre(avlTree T) {
+		if (!T)
+			return;
+		else {
+			cout << T->data.keyc << T->h << endl;
+			avlTraversalPre(T->lchild);
+			avlTraversalPre(T->rchild);
+		}
+	}
+	void avlTraversalIn(avlTree T) {
+		if (!T)
+			return;
+		else {
+			avlTraversalIn(T->lchild);
+			cout << T->data.keyc <<T->h<< endl;
+			avlTraversalIn(T->rchild);
+		}
+	}
+	void avlTraversalPost(avlTree T) {
+		if (!T)
+			return;
+		else {
+			avlTraversalPost(T->lchild);
+			avlTraversalPost(T->rchild);
+			cout << T->data.keyc << T->h << endl;
+		}
+	}
 };
