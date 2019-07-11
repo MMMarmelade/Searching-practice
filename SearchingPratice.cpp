@@ -140,9 +140,30 @@ void bstTest() {
 
 }
 
+
+void avlTest() {
+	/*constructe a testing avlTree*/
+	avlTree T=NULL;
+	AVLTree* at = new AVLTree();
+	char c[maxsize] = { 'i','e','m','c','g','k','r','a','o','q' };
+	struct records R;
+	for (int i = 0;i != maxsize;i++) {
+		R.keyc = c[i];R.num = i;
+		at->avlInsert(T, R);
+	}
+
+	at->avlDelete(T, records('g',0));/*a record node to test avlDelete(), num is useless here*/
+	at->avlDelete(T, records('a', 0));
+	at->avlDelete(T, records('e', 0));
+
+	/*print the avlTree*/
+	at->avlTraversalPre(T);
+	at->avlTraversalIn(T);
+}
+
 int main()
 {
 	/*测试函数*/
-	bstTest();
+	avlTest();
 }
 
