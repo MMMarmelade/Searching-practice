@@ -1,6 +1,8 @@
 #pragma once
 #include "searchingH.h"
 #include <iostream>
+#include <algorithm>
+using namespace std;
 class SearchClass
 {
 public:
@@ -232,6 +234,9 @@ public:
 			InOrder(F->rchild);
 		}
 	}
+
+	
+};
 /********************
 avltree方法比较多，且不仅仅是插入删除函数，所以用一个新类包装
 *********************/
